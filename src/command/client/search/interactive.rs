@@ -163,6 +163,10 @@ impl State {
                     ExitMode::ReturnQuery => RETURN_QUERY,
                 })
             }
+            KeyCode::Enter if ctrl => {
+                self.results_state.set_instant_run(true);
+                return Some(self.results_state.selected());
+            }
             KeyCode::Enter => {
                 return Some(self.results_state.selected());
             }
@@ -517,6 +521,26 @@ impl SkimItem for HistoryWrapper {
     }
 }
 
+#[derive(Default)]
+pub struct HistoryResult {
+    command: String,
+    instant_run: bool,
+}
+
+impl HistoryResult {
+    pub fn command(&self) -> String {
+        if self.instant_run() {
+            return "### <[ATUIN_INSTANT_MODE]> ###\n".to_owned() + &self.command.clone()
+        }
+
+        self.command.clone()
+    }
+
+    pub fn instant_run(&self) -> bool {
+        self.instant_run
+    }
+}
+
 // this is a big blob of horrible! clean it up!
 // for now, it works. But it'd be great if it were more easily readable, and
 // modular. I'd like to add some more stats and stuff at some point
@@ -525,7 +549,7 @@ pub async fn history(
     query: &[String],
     settings: &Settings,
     db: &mut impl Database,
-) -> Result<String> {
+) -> Result<HistoryResult> {
     let stdout = Stdout::new()?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -605,13 +629,22 @@ pub async fn history(
     };
     if index < results.len() {
         // index is in bounds so we return that entry
-        Ok(results.swap_remove(index).command.clone())
+        Ok(HistoryResult {
+            command: results.swap_remove(index).command.clone(),
+            instant_run: app.results_state.instant_run(),
+        })
     } else if index == RETURN_ORIGINAL {
-        Ok(String::new())
+        Ok(HistoryResult {
+            command: String::new(),
+            instant_run: false,
+        })
     } else {
         // Either:
         // * index == RETURN_QUERY, in which case we should return the input
         // * out of bounds -> usually implies no selected entry so we return the input
-        Ok(app.search.input.into_inner())
+        Ok(HistoryResult {
+            command: app.search.input.into_inner(),
+            instant_run: app.results_state.instant_run(),
+        })
     }
 }

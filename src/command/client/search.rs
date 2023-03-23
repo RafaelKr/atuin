@@ -99,7 +99,9 @@ impl Cmd {
 
         if self.interactive {
             let item = interactive::history(&self.query, settings, db).await?;
-            eprintln!("{item}");
+            let command = item.command();
+
+            eprintln!("{command}");
         } else {
             let list_mode = ListMode::from_flags(self.human, self.cmd_only);
             let entries = run_non_interactive(

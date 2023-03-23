@@ -19,6 +19,7 @@ pub struct HistoryList<'a> {
 pub struct ListState {
     offset: usize,
     selected: usize,
+    instant_run: bool,
     max_entries: usize,
 }
 
@@ -27,12 +28,20 @@ impl ListState {
         self.selected
     }
 
+    pub fn instant_run(&self) -> bool {
+        self.instant_run
+    }
+
     pub fn max_entries(&self) -> usize {
         self.max_entries
     }
 
     pub fn select(&mut self, index: usize) {
         self.selected = index;
+    }
+
+    pub fn set_instant_run(&mut self, instant_run: bool) {
+        self.instant_run = instant_run
     }
 }
 

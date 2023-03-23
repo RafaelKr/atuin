@@ -38,12 +38,27 @@ _atuin_search() {
     output=$(RUST_LOG=error atuin search $* -i -- $BUFFER 3>&1 1>&2 2>&3)
     echoti smkx
 
+    # check if we should run the command instantly
+    instant_mode=0
+    [[ $(echo $output | head -n 1) == "### <[ATUIN_INSTANT_MODE]> ###" ]] && instant_mode=1
+
+    # if yes we need to remove the first line indicating we're in instant mode
+    if [[ $instant_mode == 1 ]]; then
+      output=$(echo $output | tail -n+2)
+      # we need this here, else we'll have an additional empty prompt before our command
+      zle reset-prompt
+    fi
+
     if [[ -n $output ]]; then
         RBUFFER=""
         LBUFFER=$output
     fi
 
-    zle reset-prompt
+    if [[ $instant_mode == 1 ]]; then
+      zle accept-line
+    else
+      zle reset-prompt
+    fi
 }
 
 _atuin_up_search() {
